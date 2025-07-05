@@ -1,12 +1,10 @@
-from sklearn.metrics import mean_squared_error, r2_score
 import pandas as pd
 import numpy as np
-
-def evaluate_model(model, X_test, y_test):
-    preds = model.predict(X_test)
-    mse = mean_squared_error(y_test, preds)
-    r2 = r2_score(y_test, preds)
-    return mse, r2
+from sklearn.metrics import mean_squared_error, r2_score
+from sklearn.model_selection import GridSearchCV
+from sklearn.linear_model import Ridge
+from sklearn.tree import DecisionTreeRegressor
+from sklearn.ensemble import RandomForestRegressor
 
 def load_data():
     url = "http://lib.stat.cmu.edu/datasets/boston"
@@ -19,12 +17,35 @@ def load_data():
     df['MEDV'] = target
     return df
 
-def get_models():
-    from sklearn.linear_model import LinearRegression
-    from sklearn.tree import DecisionTreeRegressor
-    from sklearn.ensemble import RandomForestRegressor
-    return {
-        "LinearRegression": LinearRegression(),
-        "DecisionTree": DecisionTreeRegressor(),
-        "RandomForest": RandomForestRegressor()
+def evaluate_model(model, X_test, y_test):
+    preds = model.predict(X_test)
+    mse = mean_squared_error(y_test, preds)
+    r2 = r2_score(y_test, preds)
+    return mse, r2
+
+def get_models(X_train, y_train):
+    models = {}
+
+    # Ridge Regression
+    ridge_params = {'alpha': [0.1, 1.0, 10.0]}
+    ridge = GridSearchCV(Ridge(), ridge_params, cv=5)
+    ridge.fit(X_train, y_train)
+    models['Ridge'] = ridge
+
+    # Decision Tree
+    dt_params = {'max_depth': [3, 5, 10], 'min_samples_split': [2, 5, 10]}
+    dt = GridSearchCV(DecisionTreeRegressor(), dt_params, cv=5)
+    dt.fit(X_train, y_train)
+    models['DecisionTree'] = dt
+
+    # Random Forest
+    rf_params = {
+        'n_estimators': [50, 100],
+        'max_depth': [None, 10],
+        'min_samples_split': [2, 5]
     }
+    rf = GridSearchCV(RandomForestRegressor(), rf_params, cv=3)
+    rf.fit(X_train, y_train)
+    models['RandomForest'] = rf
+
+    return models
